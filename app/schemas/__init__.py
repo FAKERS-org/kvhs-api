@@ -2,7 +2,6 @@
 Schemas package - exports all Pydantic schemas.
 """
 
-# Re-export from base
 from app.schemas.base import (
     BaseResponse,
     EmailStr,
@@ -10,8 +9,6 @@ from app.schemas.base import (
     PaginationParams,
     TimestampSchema,
 )
-
-# Re-export from auth
 from app.schemas.auth import (
     LoginRequest,
     RegisterAdmin,
@@ -21,10 +18,7 @@ from app.schemas.auth import (
     TokenData,
     UserInfo,
 )
-
-# Import all schemas from old schemas.py temporarily
-# This allows gradual migration
-from app.schemas_old import (
+from app.schemas.academic import (
     AssignmentScoreBase,
     AssignmentScoreCreate,
     AssignmentScoreRead,
@@ -33,6 +27,15 @@ from app.schemas_old import (
     AttendanceCreate,
     AttendanceRead,
     AttendanceUpdate,
+    CourseBase,
+    CourseCreate,
+    CourseRead,
+    CourseUpdate,
+    EnrollmentBase,
+    EnrollmentCreate,
+    EnrollmentRead,
+)
+from app.schemas.cms import (
     CalendarEventBase,
     CalendarEventCreate,
     CalendarEventRead,
@@ -44,10 +47,6 @@ from app.schemas_old import (
     ContentTagCreate,
     ContentTagRead,
     ContentUpdate,
-    CourseBase,
-    CourseCreate,
-    CourseRead,
-    CourseUpdate,
     DepartmentBase,
     DepartmentCreate,
     DepartmentRead,
@@ -56,10 +55,9 @@ from app.schemas_old import (
     DocumentCreate,
     DocumentRead,
     DocumentUpdate,
-    EnrollmentBase,
-    EnrollmentCreate,
-    EnrollmentRead,
-    SearchRequest,
+)
+from app.schemas.search import SearchRequest
+from app.schemas.user import (
     StudentBase,
     StudentCreate,
     StudentRead,

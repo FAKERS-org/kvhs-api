@@ -1,5 +1,5 @@
 """
-Database configuration and session management.
+Database engine and session management.
 """
 
 from collections.abc import Generator
@@ -19,8 +19,8 @@ connect_args = (
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args=connect_args,
-    pool_pre_ping=True,  # Verify connections before using
-    echo=False,  # Set to True for SQL query logging
+    pool_pre_ping=True,
+    echo=False,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -28,8 +28,8 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db() -> Generator[Session, None, None]:
     """
-    Dependency to get database session.
-    Automatically closes session after use.
+    Dependency to get a database session.
+    Automatically closes the session after use.
     """
     db = SessionLocal()
     try:
@@ -42,7 +42,7 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def init_db():
+def init_db() -> None:
     """Initialize database tables."""
     from app.models import Base
 

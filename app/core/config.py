@@ -36,6 +36,14 @@ class Settings(BaseSettings):
         """Support JSON arrays or comma-separated origins in env configuration."""
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
+        if isinstance(value, list):
+            result = []
+            for item in value:
+                if isinstance(item, str):
+                    result.extend([o.strip() for o in item.split(",") if o.strip()])
+                else:
+                    result.append(item)
+            return result
         return value
 
 

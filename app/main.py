@@ -19,7 +19,7 @@ from app.core.exception_handlers import (
 from app.core.exceptions import AppException
 from app.core.logging_config import logger
 from app.core.middleware import RequestLoggingMiddleware
-from app.database import init_db
+from app.db.session import init_db
 
 
 @asynccontextmanager

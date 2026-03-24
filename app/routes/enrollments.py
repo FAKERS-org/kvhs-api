@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.db.session import get_db
 from app.models import Course, Enrollment, Student
 from app.schemas import EnrollmentCreate, EnrollmentRead
 

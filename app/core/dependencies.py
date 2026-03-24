@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.constants import ErrorMessages, UserRole
 from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.core.security import decode_token
-from app.database import get_db as db_generator
+from app.db.session import get_db as db_generator
 from app.services.auth import AuthService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")

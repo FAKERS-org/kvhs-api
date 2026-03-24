@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import app.core.dependencies as dependencies
-import app.database as database
+import app.db.session as database
 from app.core.config import Settings, settings
 from app.main import app
 from app.models import Base
@@ -50,7 +50,7 @@ class AppImprovementsTestCase(unittest.TestCase):
 
     def test_settings_parse_comma_separated_origins(self) -> None:
         parsed = Settings(
-            ALLOWED_ORIGINS="http://localhost:3000, http://localhost:5173")
+            ALLOWED_ORIGINS=["http://localhost:3000, http://localhost:5173"])
         self.assertEqual(
             parsed.ALLOWED_ORIGINS,
             ["http://localhost:3000", "http://localhost:5173"],
