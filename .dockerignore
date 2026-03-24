@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+.env
+school.db
+node_modules/
+.python-version

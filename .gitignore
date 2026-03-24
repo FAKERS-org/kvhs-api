@@ -52,4 +52,7 @@ dist/
 build/ 
 
 # Ignore gitignore file itself
-.gitignore
+# .gitignore
+codex/
+*.db
+alembic/versions/
