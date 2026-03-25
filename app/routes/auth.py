@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_current_active_user, get_db
+from app.core.dependencies import (
+    check_admin_registration_allowed,
+    get_current_active_user,
+    get_db,
+    require_staff_or_admin,
+)
 from app.schemas import (
     LoginRequest,
     RegisterAdmin,
@@ -19,24 +24,36 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post(
     "/register/admin", response_model=dict, status_code=status.HTTP_201_CREATED
 )
-def register_admin(admin_data: RegisterAdmin, db: Session = Depends(get_db)):
-    """Register a new admin user."""
+def register_admin(
+    admin_data: RegisterAdmin,
+    db: Session = Depends(get_db),
+    current_user: dict | None = Depends(check_admin_registration_allowed),
+):
+    """Register a new admin user. Only allowed if no admins exist or if current user is admin."""
     return AuthService(db).register_admin(admin_data)
 
 
 @router.post(
     "/register/teacher", response_model=dict, status_code=status.HTTP_201_CREATED
 )
-def register_teacher(teacher_data: RegisterTeacher, db: Session = Depends(get_db)):
-    """Register a new teacher user."""
+def register_teacher(
+    teacher_data: RegisterTeacher,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_staff_or_admin),
+):
+    """Register a new teacher user. Only allowed for admins or staff."""
     return AuthService(db).register_teacher(teacher_data)
 
 
 @router.post(
     "/register/student", response_model=dict, status_code=status.HTTP_201_CREATED
 )
-def register_student(student_data: RegisterStudent, db: Session = Depends(get_db)):
-    """Register a new student user."""
+def register_student(
+    student_data: RegisterStudent,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_staff_or_admin),
+):
+    """Register a new student user. Only allowed for admins or staff."""
     return AuthService(db).register_student(student_data)
 
 

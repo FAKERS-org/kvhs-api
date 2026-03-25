@@ -12,9 +12,11 @@ from app.core.constants import ErrorMessages, UserRole
 from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.core.security import decode_token
 from app.db.session import get_db as db_generator
+from app.repositories.user import AdminRepository
 from app.services.auth import AuthService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/token", auto_error=False)
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -94,4 +96,30 @@ async def require_staff_or_admin(
     """Require staff or admin role."""
     if current_user["role"] not in [UserRole.STAFF.value, UserRole.ADMIN.value]:
         raise AuthorizationError("Staff or admin access required")
+    return current_user
+
+
+async def check_admin_registration_allowed(
+    db: Session = Depends(get_db),
+    token: str | None = Depends(oauth2_scheme_optional),
+) -> dict | None:
+    """
+    Dependency to check if admin registration is allowed.
+    Allowed if no admins exist (bootstrap phase) or if the current user is an admin.
+    """
+    admin_count = AdminRepository(db).count()
+    if admin_count == 0:
+        return None
+
+    # If admins exist, require authentication
+    if not token:
+        raise AuthorizationError(
+            "Initial admin already registered. Authentication required to create more admins."
+        )
+
+    # Validate token and check if current user is an admin
+    current_user = await get_current_user(token, db)
+    if current_user["role"] != UserRole.ADMIN.value:
+        raise AuthorizationError("Only existing admins can register new admins")
+
     return current_user

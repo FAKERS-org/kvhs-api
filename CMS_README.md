@@ -117,6 +117,8 @@ Once running, visit:
 ### 1. Register Users
 
 #### Register an Admin
+The first admin can be registered publicly. Subsequent admin registrations require an existing admin's authorization.
+
 ```bash
 curl -X POST "http://localhost:8000/auth/register/admin" \
   -H "Content-Type: application/json" \
@@ -129,9 +131,12 @@ curl -X POST "http://localhost:8000/auth/register/admin" \
 ```
 
 #### Register a Teacher
+Requires admin or staff authorization.
+
 ```bash
 curl -X POST "http://localhost:8000/auth/register/teacher" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{
     "teacher_id": "TCH001",
     "name": "Jane Teacher",
@@ -143,9 +148,12 @@ curl -X POST "http://localhost:8000/auth/register/teacher" \
 ```
 
 #### Register a Student
+Requires admin or staff authorization.
+
 ```bash
 curl -X POST "http://localhost:8000/auth/register/student" \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{
     "student_id": "STU001",
     "name": "Bob Student",
@@ -188,9 +196,9 @@ curl -X GET "http://localhost:8000/content/" \
 ## API Endpoints Overview
 
 ### Authentication
-- `POST /auth/register/admin` - Register admin user
-- `POST /auth/register/teacher` - Register teacher user
-- `POST /auth/register/student` - Register student user
+- `POST /auth/register/admin` - Register admin user (Public for first admin, then Admin only)
+- `POST /auth/register/teacher` - Register teacher user (Admin/Staff only)
+- `POST /auth/register/student` - Register student user (Admin/Staff only)
 - `POST /auth/login` - Login and get tokens
 
 ### Content Management

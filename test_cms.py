@@ -33,7 +33,7 @@ def main():
     print_response("Health Check", response)
 
     # 2. Register Admin
-    print("\n2. Registering Admin...")
+    print("\n2. Registering Initial Admin...")
     admin_data = {
         "admin_id": "ADM001",
         "name": "Test Admin",
@@ -43,8 +43,21 @@ def main():
     response = requests.post(f"{BASE_URL}/auth/register/admin", json=admin_data)
     print_response("Register Admin", response)
 
-    # 3. Register Teacher
-    print("\n3. Registering Teacher...")
+    # 3. Login as Admin (required for subsequent registrations)
+    print("\n3. Logging in as Admin...")
+    login_data = {"email": "admin@test.com", "password": "admin123456"}
+    response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
+    print_response("Admin Login", response)
+
+    if response.status_code != 200:
+        print("Error: Could not login as admin. Stopping tests.")
+        return
+
+    admin_token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # 4. Register Teacher
+    print("\n4. Registering Teacher (Authorized)...")
     teacher_data = {
         "teacher_id": "TCH001",
         "name": "Test Teacher",
@@ -53,11 +66,13 @@ def main():
         "hired_date": "2024-01-01",
         "password": "teacher123456",
     }
-    response = requests.post(f"{BASE_URL}/auth/register/teacher", json=teacher_data)
+    response = requests.post(
+        f"{BASE_URL}/auth/register/teacher", json=teacher_data, headers=headers
+    )
     print_response("Register Teacher", response)
 
-    # 4. Register Student
-    print("\n4. Registering Student...")
+    # 5. Register Student
+    print("\n5. Registering Student (Authorized)...")
     student_data = {
         "student_id": "STU001",
         "name": "Test Student",
@@ -66,85 +81,77 @@ def main():
         "enrolled_date": "2024-01-15",
         "password": "student123456",
     }
-    response = requests.post(f"{BASE_URL}/auth/register/student", json=student_data)
+    response = requests.post(
+        f"{BASE_URL}/auth/register/student", json=student_data, headers=headers
+    )
     print_response("Register Student", response)
 
-    # 5. Login as Admin
-    print("\n5. Logging in as Admin...")
-    login_data = {"email": "admin@test.com", "password": "admin123456"}
-    response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
-    print_response("Admin Login", response)
+    # 6. Create Department
+    print("\n6. Creating Department...")
+    dept_data = {
+        "name": "Science Department",
+        "description": "Science and Mathematics",
+    }
+    response = requests.post(
+        f"{BASE_URL}/cms/departments", json=dept_data, headers=headers
+    )
+    print_response("Create Department", response)
+    dept_id = response.json().get("id") if response.status_code == 201 else None
 
-    if response.status_code == 200:
-        admin_token = response.json()["access_token"]
-        headers = {"Authorization": f"Bearer {admin_token}"}
+    # 7. Create Tag
+    print("\n7. Creating Content Tag...")
+    tag_data = {"name": "Important"}
+    response = requests.post(f"{BASE_URL}/cms/tags", json=tag_data, headers=headers)
+    print_response("Create Tag", response)
+    tag_id = response.json().get("id") if response.status_code == 201 else None
 
-        # 6. Create Department
-        print("\n6. Creating Department...")
-        dept_data = {
-            "name": "Science Department",
-            "description": "Science and Mathematics",
-        }
-        response = requests.post(
-            f"{BASE_URL}/cms/departments", json=dept_data, headers=headers
-        )
-        print_response("Create Department", response)
-        dept_id = response.json().get("id") if response.status_code == 201 else None
+    # 8. Create Content
+    print("\n8. Creating Content...")
+    content_data = {
+        "title": "Welcome to School",
+        "slug": "welcome-to-school",
+        "content_type": "announcement",
+        "body": "Welcome to the new academic year!",
+        "status": "published",
+        "department_id": dept_id,
+        "tag_ids": [tag_id] if tag_id else [],
+    }
+    response = requests.post(
+        f"{BASE_URL}/content/", json=content_data, headers=headers
+    )
+    print_response("Create Content", response)
+    content_id = response.json().get("id") if response.status_code == 201 else None
 
-        # 7. Create Tag
-        print("\n7. Creating Content Tag...")
-        tag_data = {"name": "Important"}
-        response = requests.post(f"{BASE_URL}/cms/tags", json=tag_data, headers=headers)
-        print_response("Create Tag", response)
-        tag_id = response.json().get("id") if response.status_code == 201 else None
+    # 9. List Content
+    print("\n9. Listing Content...")
+    response = requests.get(f"{BASE_URL}/content/", headers=headers)
+    print_response("List Content", response)
 
-        # 8. Create Content
-        print("\n8. Creating Content...")
-        content_data = {
-            "title": "Welcome to School",
-            "slug": "welcome-to-school",
-            "content_type": "announcement",
-            "body": "Welcome to the new academic year!",
-            "status": "published",
-            "department_id": dept_id,
-            "tag_ids": [tag_id] if tag_id else [],
-        }
-        response = requests.post(
-            f"{BASE_URL}/content/", json=content_data, headers=headers
-        )
-        print_response("Create Content", response)
-        content_id = response.json().get("id") if response.status_code == 201 else None
+    # 10. Search Content
+    print("\n10. Searching Content...")
+    response = requests.get(f"{BASE_URL}/search/?q=welcome", headers=headers)
+    print_response("Search Content", response)
 
-        # 9. List Content
-        print("\n9. Listing Content...")
-        response = requests.get(f"{BASE_URL}/content/", headers=headers)
-        print_response("List Content", response)
+    # 11. Create Calendar Event
+    print("\n11. Creating Calendar Event...")
+    event_data = {
+        "title": "First Day of School",
+        "description": "Welcome back everyone!",
+        "event_type": "school_event",
+        "start_date": "2024-09-01T08:00:00",
+        "end_date": "2024-09-01T15:00:00",
+        "all_day": False,
+        "department_id": dept_id,
+    }
+    response = requests.post(
+        f"{BASE_URL}/calendar/events", json=event_data, headers=headers
+    )
+    print_response("Create Calendar Event", response)
 
-        # 10. Search Content
-        print("\n10. Searching Content...")
-        response = requests.get(f"{BASE_URL}/search/?q=welcome", headers=headers)
-        print_response("Search Content", response)
-
-        # 11. Create Calendar Event
-        print("\n11. Creating Calendar Event...")
-        event_data = {
-            "title": "First Day of School",
-            "description": "Welcome back everyone!",
-            "event_type": "school_event",
-            "start_date": "2024-09-01T08:00:00",
-            "end_date": "2024-09-01T15:00:00",
-            "all_day": False,
-            "department_id": dept_id,
-        }
-        response = requests.post(
-            f"{BASE_URL}/calendar/events", json=event_data, headers=headers
-        )
-        print_response("Create Calendar Event", response)
-
-        # 12. List Calendar Events
-        print("\n12. Listing Calendar Events...")
-        response = requests.get(f"{BASE_URL}/calendar/events", headers=headers)
-        print_response("List Calendar Events", response)
+    # 12. List Calendar Events
+    print("\n12. Listing Calendar Events...")
+    response = requests.get(f"{BASE_URL}/calendar/events", headers=headers)
+    print_response("List Calendar Events", response)
 
     # 13. Login as Student and try to view content
     print("\n13. Logging in as Student...")
