@@ -109,6 +109,7 @@ class DocumentBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
     filename: str = Field(..., min_length=1, max_length=500)
     file_path: str = Field(..., min_length=1, max_length=1000)
+    cloudinary_public_id: str | None = Field(default=None, max_length=500)
     file_size: int
     mime_type: str = Field(..., min_length=1, max_length=100)
     content_id: int | None = None

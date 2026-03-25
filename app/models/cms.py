@@ -116,6 +116,7 @@ class Document(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(500), index=True)
     filename: Mapped[str] = mapped_column(String(500))
     file_path: Mapped[str] = mapped_column(String(1000))
+    cloudinary_public_id: Mapped[str | None] = mapped_column(String(500), nullable=True)
     file_size: Mapped[int] = mapped_column(Integer)
     mime_type: Mapped[str] = mapped_column(String(100))
 

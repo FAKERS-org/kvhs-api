@@ -1,29 +1,43 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.core.constants import UserRole
 from app.core.dependencies import get_current_user, get_db, require_teacher_or_admin
 from app.models import Document
-from app.schemas import DocumentCreate, DocumentRead, DocumentUpdate
+from app.schemas import DocumentRead, DocumentUpdate
+from app.utils.cloudinary import upload_file_to_cloudinary, delete_file_from_cloudinary
 
 router = APIRouter(prefix="/documents", tags=["Document Management"])
 
 
 @router.post("/", response_model=DocumentRead, status_code=status.HTTP_201_CREATED)
-def create_document(
-    doc_data: DocumentCreate,
+async def create_document(
+    title: str = Form(...),
+    content_id: int | None = Form(None),
+    course_id: int | None = Form(None),
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_teacher_or_admin),
 ):
-    """Upload/create a new document."""
+    """Upload a new document to Cloudinary and save metadata."""
+    # Upload to Cloudinary
+    cloudinary_result = await upload_file_to_cloudinary(file)
+    
+    if not cloudinary_result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to upload file to storage"
+        )
+
     new_doc = Document(
-        title=doc_data.title,
-        filename=doc_data.filename,
-        file_path=doc_data.file_path,
-        file_size=doc_data.file_size,
-        mime_type=doc_data.mime_type,
-        content_id=doc_data.content_id,
-        course_id=doc_data.course_id,
+        title=title,
+        filename=file.filename,
+        file_path=cloudinary_result.get("secure_url"),
+        cloudinary_public_id=cloudinary_result.get("public_id"),
+        file_size=cloudinary_result.get("bytes"),
+        mime_type=file.content_type,
+        content_id=content_id,
+        course_id=course_id,
     )
 
     # Set uploader based on user role
@@ -130,7 +144,9 @@ def delete_document(
                 detail="Not authorized to delete this document",
             )
 
-    # TODO: Delete the actual file from storage
+    # Delete from Cloudinary if public_id exists
+    if doc.cloudinary_public_id:
+        delete_file_from_cloudinary(doc.cloudinary_public_id)
 
     db.delete(doc)
     db.commit()
