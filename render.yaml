@@ -17,7 +17,7 @@ services:
       - key: REFRESH_TOKEN_EXPIRE_DAYS
         value: 7
       - key: ALLOWED_ORIGINS
-        value: "*"
+        value: ["http://localhost:3000"]
       - key: AUTO_CREATE_TABLES
         value: "true"
       - key: CLOUDINARY_CLOUD_NAME
