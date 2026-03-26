@@ -5,7 +5,7 @@ from app.db.session import get_db
 from app.models import Course, Teacher
 from app.schemas import CourseCreate, CourseRead, CourseUpdate
 
-router = APIRouter(prefix="/courses", tags=["courses"])
+router = APIRouter(prefix="/courses", tags=["Courses"])
 
 
 @router.get("", response_model=list[CourseRead])

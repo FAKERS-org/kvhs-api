@@ -60,7 +60,7 @@ app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
 # Include routers
-app.include_router(api_router)
+# app.include_router(api_router)
 app.include_router(api_v1_router)
 
 

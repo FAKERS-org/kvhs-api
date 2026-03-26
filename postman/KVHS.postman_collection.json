@@ -1,0 +1,1114 @@
+{
+  "info": {
+    "_postman_id": "104ba7f7-7397-4ab4-a3b8-6b88d596e193",
+    "name": "KVHS",
+    "description": "Starter Postman collection for the KVHS School Management & CMS API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "38475351"
+  },
+  "item": [
+    {
+      "name": "KVHS API",
+      "item": [
+        {
+          "name": "Health",
+          "item": [
+            {
+              "name": "GET /health",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET /",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "Register Admin",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"admin_id\": \"ADM002\",\n  \"name\": \"Nita\",\n  \"email\": \"nita@kvsh.com\",\n  \"password\": \"nita123\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/register/admin",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "register",
+                    "admin"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login Admin",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.access_token) {",
+                      "  pm.collectionVariables.set('accessToken', data.access_token);",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"tina@kvsh.com\",\n  \"password\": \"tina123\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Current User",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "## Purpose\n\nReturns the currently authenticated user (\"me\") based on the access token provided.\n\nUse this endpoint to:\n\n- Verify that an `accessToken` is valid\n    \n- Retrieve the user profile for the logged-in account\n    \n- Confirm role/active status for authorization checks in clients\n    \n\n## Authentication\n\n**Required:** Bearer token\n\nThe request sends:\n\n- Header: `Authorization: Bearer {{accessToken}}`\n    \n\nIf the token is missing, invalid, or expired, the API should return an authentication error (commonly `401`).\n\n## Variables used\n\n- `{{baseUrl}}` — Base URL of the KVHS API (e.g., `https://api.your-domain.com`)\n    \n- `{{accessToken}}` — JWT / access token returned from the login endpoint\n    \n\n## Request\n\n- **Method:** `GET`\n    \n- **URL:** `{{baseUrl}}/api/v1/auth/me`\n    \n- **Headers:**\n    \n    - `Authorization: Bearer {{accessToken}}`\n        \n- **Body:** none\n    \n\n## Successful response (200)\n\nExample response body:\n\n``` json\n{\n  \"id\": 1,\n  \"email\": \"tina@kvsh.com\",\n  \"name\": \"Ngen Tina\",\n  \"role\": \"admin\",\n  \"is_active\": true\n}\n\n ```\n\nField notes:\n\n- `id` (number): User identifier\n    \n- `email` (string): User email address\n    \n- `name` (string): Display/name of the user\n    \n- `role` (string): User role (e.g., `admin`)\n    \n- `is_active` (boolean): Whether the account is active\n    \n\n## Common error responses\n\n- **400 Bad Request**: Malformed request (uncommon for this endpoint)\n    \n- **401 Unauthorized**: Missing/invalid/expired token\n    \n- **403 Forbidden**: Token is valid but user lacks permission (role/authorization)\n    \n- **404 Not Found**: Endpoint not found (wrong baseUrl/path)\n    \n- **500 Internal Server Error**: Unexpected server error\n    \n\n## Notes\n\n- Ensure your active environment (e.g., `kvhs`) contains valid values for `baseUrl` and `accessToken` before sending this request."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "CMS Setup",
+          "item": [
+            {
+              "name": "Create Department",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) {",
+                      "  pm.collectionVariables.set('departmentId', data.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Social Science\",\n  \"description\": \"Socity and Literacy\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/cms/departments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "cms",
+                    "departments"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Tag",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) {",
+                      "  pm.collectionVariables.set('tagId', data.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Important\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/cms/tags",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "cms",
+                    "tags"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Departments",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/cms/departments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "cms",
+                    "departments"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Tags",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/cms/tags",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "cms",
+                    "tags"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Content",
+          "item": [
+            {
+              "name": "Create Content",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) {",
+                      "  pm.collectionVariables.set('contentId', data.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Welcome to School\",\n  \"slug\": \"welcome-to-school\",\n  \"content_type\": \"announcement\",\n  \"body\": \"Welcome to the new academic year!\",\n  \"template\": null,\n  \"status\": \"draft\",\n  \"department_id\": {{departmentId}},\n  \"course_id\": null,\n  \"parent_id\": null,\n  \"tag_ids\": [{{tagId}}]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/content/",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "content",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Content",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/content/",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "content",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Content By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/content/{{contentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "content",
+                    "{{contentId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Publish Content",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/content/{{contentId}}/publish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "content",
+                    "{{contentId}}",
+                    "publish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Search Content GET",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/search/?q=welcome",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "search",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "q",
+                      "value": "welcome"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Search Content POST",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"welcome\",\n  \"content_type\": \"announcement\",\n  \"department_id\": {{departmentId}},\n  \"tags\": [\"Important\"],\n  \"status\": \"published\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/search/",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "search",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Calendar",
+          "item": [
+            {
+              "name": "Create Event",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) {",
+                      "  pm.collectionVariables.set('eventId', data.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"First Day of School\",\n  \"description\": \"Welcome back everyone!\",\n  \"event_type\": \"school_event\",\n  \"start_date\": \"2026-09-01T08:00:00Z\",\n  \"end_date\": \"2026-09-01T15:00:00Z\",\n  \"all_day\": false,\n  \"course_id\": null,\n  \"department_id\": {{departmentId}}\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/calendar/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "calendar",
+                    "events"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Events",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/calendar/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "calendar",
+                    "events"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Documents",
+          "item": [
+            {
+              "name": "Create Document Record",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) {",
+                      "  pm.collectionVariables.set('documentId', data.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "multipart/form-data"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "title",
+                      "value": "Elle Fanning 2",
+                      "description": "The display title for the document.",
+                      "type": "text",
+                      "uuid": "e117f3ba-840f-46be-a57a-5dbce9951ef6"
+                    },
+                    {
+                      "key": "file",
+                      "description": "The actual file you want to upload.",
+                      "type": "file",
+                      "uuid": "028a3f5e-424f-4a97-9563-5650611e443e",
+                      "src": "postman-cloud:///1f12883b-de9a-49b0-9801-4d97ade82251"
+                    },
+                    {
+                      "key": "content_id",
+                      "value": "\"5\"",
+                      "description": "ID of the content this document belongs to. ",
+                      "type": "text",
+                      "uuid": "9b910878-ce99-47e3-a1ba-d398e8afc027",
+                      "disabled": true
+                    },
+                    {
+                      "key": "course_id",
+                      "value": "\"1\"",
+                      "description": "ID of the course this document belongs to.",
+                      "type": "text",
+                      "uuid": "e5005b88-5963-4fe6-99d8-c61d4e775181",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/documents/",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "documents",
+                    ""
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Documents",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/documents/?content_id={{contentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "documents",
+                    ""
+                  ],
+                  "query": [
+                    {
+                      "key": "content_id",
+                      "value": "{{contentId}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Document",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/documents/{{documentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "documents",
+                    "{{documentId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Academic",
+          "item": [
+            {
+              "name": "Create Teacher Record",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) {",
+                      "  pm.collectionVariables.set('teacherId', data.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"teacher_id\": \"TCH100\",\n  \"name\": \"Teacher Record\",\n  \"email\": \"teacher.record@example.com\",\n  \"department\": \"Science\",\n  \"hired_date\": \"2026-01-10\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/teachers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "teachers"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Student Record",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) {",
+                      "  pm.collectionVariables.set('studentId', data.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"student_id\": \"STU100\",\n  \"name\": \"Student Record\",\n  \"email\": \"student.record@example.com\",\n  \"grade_level\": 10,\n  \"enrolled_date\": \"2026-01-15\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/students",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "students"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Course",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) {",
+                      "  pm.collectionVariables.set('courseId', data.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_code\": \"SCI101\",\n  \"name\": \"General Science\",\n  \"description\": \"Introductory science course\",\n  \"credits\": 3,\n  \"teacher_id\": {{teacherId}}\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/courses",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "courses"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Enrollment",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json();",
+                      "if (data.id) {",
+                      "  pm.collectionVariables.set('enrollmentId', data.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"student_id\": {{studentId}},\n  \"course_id\": {{courseId}},\n  \"enrolled_date\": \"2026-01-20\",\n  \"grade\": null\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/enrollments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "enrollments"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Courses",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/courses",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "courses"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Enrollments",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/enrollments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "enrollments"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Faculty",
+          "item": [
+            {
+              "name": "Register Teacher",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"teacher_id\": \"TCH001\",\r\n    \"name\": \"Meng Riem\",\r\n    \"email\": \"menggriem@kvhs.com\",\r\n    \"department\": \"Natural Science\",\r\n    \"hired_date\": \"2024-01-01\",\r\n    \"password\": \"teacher001-123\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/register/teacher",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "register",
+                    "teacher"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "KVHS AI",
+      "item": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "departmentId",
+      "value": ""
+    },
+    {
+      "key": "tagId",
+      "value": ""
+    },
+    {
+      "key": "contentId",
+      "value": ""
+    },
+    {
+      "key": "eventId",
+      "value": ""
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    },
+    {
+      "key": "teacherId",
+      "value": ""
+    },
+    {
+      "key": "studentId",
+      "value": ""
+    },
+    {
+      "key": "courseId",
+      "value": ""
+    },
+    {
+      "key": "enrollmentId",
+      "value": ""
+    },
+    {
+      "key": "devUrl",
+      "value": ""
+    },
+    {
+      "key": "prodUrl",
+      "value": ""
+    }
+  ]
+}

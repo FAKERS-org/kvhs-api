@@ -5,7 +5,7 @@ from app.db.session import get_db
 from app.models import Course, Enrollment, Student
 from app.schemas import EnrollmentCreate, EnrollmentRead
 
-router = APIRouter(prefix="/enrollments", tags=["enrollments"])
+router = APIRouter(prefix="/enrollments", tags=["Enrollments"])
 
 
 @router.get("", response_model=list[EnrollmentRead])
