@@ -14,9 +14,18 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "sqlite:///./school.db"
+    AUTO_CREATE_TABLES: bool = True
+
+    # MongoDB (deprecated - being migrated to PostgreSQL)
     MONGODB_URL: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "kvhs"
-    AUTO_CREATE_TABLES: bool = True
+
+    # MinIO (for file storage - replaces GridFS)
+    MINIO_ENDPOINT: str = "localhost:9000"
+    MINIO_ACCESS_KEY: str = "minioadmin"
+    MINIO_SECRET_KEY: str = "minioadmin"
+    MINIO_BUCKET_NAME: str = "kvhs-files"
+    MINIO_SECURE: bool = False
 
     # Security
     SECRET_KEY: str = "your-secret-key-change-this-in-production"

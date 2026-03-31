@@ -31,7 +31,14 @@ if config.config_file_name is not None:
 from app.models import Base  # noqa: E402
 from app.models.user import Student, Teacher, Admin  # noqa: E402
 from app.models.academic import Course, Enrollment, Attendance, AssignmentScore  # noqa: E402
-from app.models.cms import Content, Document, CalendarEvent, Department, ContentTag  # noqa: E402
+# Import CMS models (SQLAlchemy for PostgreSQL)
+from app.models.cms import (  # noqa: E402
+    Content,
+    CMSDocument as Document,
+    CalendarEvent,
+    Department,
+    ContentTag,
+)
 
 # add your model's MetaData object here
 # for 'autogenerate' support

@@ -1,102 +1,115 @@
 """
-Content repository with CMS-specific operations using Beanie (MongoDB).
+Content repository with CMS-specific operations (SQLAlchemy version).
 """
 
 from typing import Optional
-from beanie.operators import RegEx
 
-from app.models import Content, ContentTag
+from sqlalchemy.orm import Session, joinedload
+
+from app.models.cms import Content, ContentTag
 from app.core.constants import PublishStatus
 
 
 class ContentRepository:
-    """Repository for Content model (MongoDB)."""
+    """Repository for Content model (PostgreSQL)."""
 
-    async def get(self, id: str) -> Optional[Content]:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get(self, id: int) -> Optional[Content]:
         """Get a single record by ID."""
-        return await Content.get(id)
+        return self.db.query(Content).filter(Content.id == id).first()
 
-    async def get_by_slug(self, slug: str) -> Optional[Content]:
+    def get_by_slug(self, slug: str) -> Optional[Content]:
         """Get content by slug."""
-        return await Content.find_one(Content.slug == slug)
+        return self.db.query(Content).filter(Content.slug == slug).first()
 
-    async def get_multi(self, skip: int = 0, limit: int = 100) -> list[Content]:
+    def get_multi(self, skip: int = 0, limit: int = 100) -> list[Content]:
         """Get multiple records with pagination."""
-        return await Content.find_all().skip(skip).limit(limit).to_list()
+        return self.db.query(Content).offset(skip).limit(limit).all()
 
-    async def get_by_status(
+    def get_by_status(
         self, status: str, skip: int = 0, limit: int = 100
     ) -> list[Content]:
         """Get content by status."""
-        return await Content.find(Content.status == status).skip(skip).limit(limit).to_list()
+        return self.db.query(Content).filter(Content.status == status).offset(skip).limit(limit).all()
 
-    async def get_by_type(
+    def get_by_type(
         self, content_type: str, skip: int = 0, limit: int = 100
     ) -> list[Content]:
         """Get content by type."""
-        return await Content.find(Content.content_type == content_type).skip(skip).limit(limit).to_list()
+        return self.db.query(Content).filter(Content.content_type == content_type).offset(skip).limit(limit).all()
 
-    async def get_by_department(
-        self, department_id: str, skip: int = 0, limit: int = 100
+    def get_by_department(
+        self, department_id: int, skip: int = 0, limit: int = 100
     ) -> list[Content]:
         """Get content by department."""
-        return await Content.find(Content.department_id == department_id).skip(skip).limit(limit).to_list()
+        return self.db.query(Content).filter(Content.department_id == department_id).offset(skip).limit(limit).all()
 
-    async def get_by_course(
+    def get_by_course(
         self, course_id: int, skip: int = 0, limit: int = 100
     ) -> list[Content]:
         """Get content by course."""
-        return await Content.find(Content.course_id == course_id).skip(skip).limit(limit).to_list()
+        return self.db.query(Content).filter(Content.course_id == course_id).offset(skip).limit(limit).all()
 
-    async def get_by_author_teacher(
+    def get_by_author_teacher(
         self, teacher_id: int, skip: int = 0, limit: int = 100
     ) -> list[Content]:
         """Get content by teacher author."""
-        return await Content.find(Content.author_teacher_id == teacher_id).skip(skip).limit(limit).to_list()
+        return self.db.query(Content).filter(Content.author_teacher_id == teacher_id).offset(skip).limit(limit).all()
 
-    async def search(
+    def search(
         self,
         query: str,
         content_type: Optional[str] = None,
-        department_id: Optional[str] = None,
+        department_id: Optional[int] = None,
         status: Optional[str] = None,
         limit: int = 100,
     ) -> list[Content]:
         """Search content with filters."""
-        filters = {}
-        if query:
-            # Simple regex search for title or body
-            filters["$or"] = [
-                {"title": {"$regex": query, "$options": "i"}},
-                {"body": {"$regex": query, "$options": "i"}}
-            ]
+        db_query = self.db.query(Content)
         
+        if query:
+            # ILIKE search for title or body (PostgreSQL)
+            search_term = f"%{query}%"
+            db_query = db_query.filter(
+                (Content.title.ilike(search_term)) |
+                (Content.body.ilike(search_term))
+            )
+
         if content_type:
-            filters["content_type"] = content_type
+            db_query = db_query.filter(Content.content_type == content_type)
         if department_id:
-            filters["department_id"] = department_id
+            db_query = db_query.filter(Content.department_id == department_id)
         if status:
-            filters["status"] = status
+            db_query = db_query.filter(Content.status == status)
 
-        return await Content.find(filters).limit(limit).to_list()
+        return db_query.limit(limit).all()
 
-    async def create(self, obj_in: dict) -> Content:
+    def create(self, obj_in: dict) -> Content:
         """Create a new record."""
         new_obj = Content(**obj_in)
-        return await new_obj.insert()
+        self.db.add(new_obj)
+        self.db.commit()
+        self.db.refresh(new_obj)
+        return new_obj
 
-    async def update(self, db_obj: Content, obj_in: dict) -> Content:
+    def update(self, db_obj: Content, obj_in: dict) -> Content:
         """Update an existing record."""
         update_data = obj_in.copy()
         for field, value in update_data.items():
             setattr(db_obj, field, value)
-        await db_obj.save()
+        self.db.commit()
+        self.db.refresh(db_obj)
         return db_obj
 
-    async def delete(self, db_obj: Content) -> None:
+    def delete(self, db_obj: Content) -> None:
         """Delete a record."""
-        await db_obj.delete()
+        self.db.delete(db_obj)
+        self.db.commit()
 
-    async def get_published(self, skip: int = 0, limit: int = 100) -> list[Content]:
+    def get_published(self, skip: int = 0, limit: int = 100) -> list[Content]:
         """Get all published content."""
-        return await Content.find(Content.status == PublishStatus.PUBLISHED.value).skip(skip).limit(limit).to_list()
+        return self.db.query(Content).filter(
+            Content.status == PublishStatus.PUBLISHED.value
+        ).offset(skip).limit(limit).all()

@@ -5,15 +5,15 @@ from fastapi import APIRouter
 from app.core.constants import APIConfig
 from app.routes import (
     auth,
-    calendar,
-    cms_utils,
-    content,
     courses,
-    documents,
     enrollments,
-    search,
     students,
     teachers,
+    content,
+    documents,
+    calendar,
+    cms_utils,
+    search,
 )
 
 

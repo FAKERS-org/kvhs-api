@@ -10,6 +10,6 @@ class SearchRequest(BaseModel):
 
     query: str = Field(..., min_length=1)
     content_type: str | None = None
-    department_id: str | None = None
+    department_id: int | None = None
     tags: list[str] = Field(default_factory=list)
     status: str | None = None
