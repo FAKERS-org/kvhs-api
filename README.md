@@ -33,7 +33,7 @@ Health endpoints:
 - Alembic migrations
 - Pydantic Settings
 - JWT auth (`python-jose` + `passlib`)
-- Optional Cloudinary integration for document storage
+- MongoDB (Beanie + Motor) with GridFS for document storage
 
 ## Project Structure
 
@@ -48,7 +48,7 @@ kvhs-api/
 		routes/                  # endpoint modules
 		schemas/                 # request/response schemas
 		services/                # business logic
-		utils/                   # helpers (including Cloudinary)
+		utils/                   # helpers
 	alembic/                   # migrations
 	tests/                     # tests
 	test_cms.py                # manual end-to-end smoke script
@@ -81,9 +81,8 @@ Required/important variables:
 | `ALLOWED_ORIGINS`             | localhost frontends     | Comma-separated origins                     |
 | `UPLOAD_DIR`                  | `./uploads`             | Local upload directory                      |
 | `MAX_UPLOAD_SIZE`             | `10485760`              | 10MB                                        |
-| `CLOUDINARY_CLOUD_NAME`       | empty                   | Required for Cloudinary uploads             |
-| `CLOUDINARY_API_KEY`          | empty                   | Required for Cloudinary uploads             |
-| `CLOUDINARY_API_SECRET`       | empty                   | Required for Cloudinary uploads             |
+| `MONGODB_URL`                 | `mongodb://...`         | MongoDB connection string for GridFS        |
+| `MONGODB_DB_NAME`             | `kvhs`                  | MongoDB database name                       |
 
 ### 3. Run the API
 

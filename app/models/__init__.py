@@ -9,9 +9,8 @@ from app.models.cms import (
     CalendarEvent,
     Content,
     ContentTag,
-    ContentTagAssociation,
     Department,
-    Document,
+    CMSDocument as Document,
 )
 
 __all__ = [
@@ -33,5 +32,4 @@ __all__ = [
     "CalendarEvent",
     "Department",
     "ContentTag",
-    "ContentTagAssociation",
 ]

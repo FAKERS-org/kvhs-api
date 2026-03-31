@@ -27,11 +27,7 @@ class Course(Base, TimestampMixin):
     enrollments: Mapped[list["Enrollment"]] = relationship(
         back_populates="course", cascade="all, delete-orphan"
     )
-    contents: Mapped[list["Content"]] = relationship(back_populates="course")
-    documents: Mapped[list["Document"]] = relationship(back_populates="course")
-    calendar_events: Mapped[list["CalendarEvent"]] = relationship(
-        back_populates="course"
-    )
+    # CMS relationships are now handled via MongoDB IDs (manual lookups)
 
 
 class Enrollment(Base, TimestampMixin):
@@ -74,7 +70,7 @@ class AssignmentScore(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), index=True)
-    content_id: Mapped[int] = mapped_column(ForeignKey("contents.id"), index=True)
+    content_id: Mapped[str] = mapped_column(String(24), index=True) # MongoDB ID
     score: Mapped[float] = mapped_column()
     max_score: Mapped[float] = mapped_column()
     feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -83,4 +79,3 @@ class AssignmentScore(Base, TimestampMixin):
 
     # Relationships
     student: Mapped["Student"] = relationship()
-    assignment: Mapped["Content"] = relationship()

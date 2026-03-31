@@ -57,7 +57,7 @@ class Teacher(Base, TimestampMixin):
 
     # Relationships
     courses: Mapped[list["Course"]] = relationship(back_populates="teacher")
-    contents: Mapped[list["Content"]] = relationship(back_populates="author")
+    # CMS contents relationship now handled via MongoDB IDs
 
 
 class Admin(Base, TimestampMixin):
@@ -75,5 +75,4 @@ class Admin(Base, TimestampMixin):
         String(20), default=UserRole.ADMIN.value, nullable=False
     )
 
-    # Relationships
-    contents: Mapped[list["Content"]] = relationship(back_populates="admin_author")
+    # CMS contents relationship now handled via MongoDB IDs

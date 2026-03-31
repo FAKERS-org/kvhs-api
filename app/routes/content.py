@@ -1,15 +1,14 @@
 from datetime import UTC, datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from beanie.operators import In
 
 from app.core.constants import PublishStatus, UserRole
 from app.core.dependencies import get_current_user, get_db, require_teacher_or_admin
 from app.models import (
     Content,
     ContentTag,
-    ContentTagAssociation,
 )
 from app.schemas import ContentCreate, ContentRead, ContentUpdate
 
@@ -17,31 +16,23 @@ router = APIRouter(prefix="/content", tags=["Content Management"])
 
 
 @router.post("/", response_model=ContentRead, status_code=status.HTTP_201_CREATED)
-def create_content(
+async def create_content(
     content_data: ContentCreate,
-    db: Session = Depends(get_db),
     current_user: dict = Depends(require_teacher_or_admin),
 ):
     """Create new content (teachers can create course-related content, admins can create any content)."""
     # Check if slug already exists
-    existing = db.query(Content).filter(Content.slug == content_data.slug).first()
+    existing = await Content.find_one(Content.slug == content_data.slug)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Slug already exists"
         )
 
-    # Create content
-    new_content = Content(
-        title=content_data.title,
-        slug=content_data.slug,
-        content_type=content_data.content_type,
-        body=content_data.body,
-        template=content_data.template,
-        status=content_data.status,
-        department_id=content_data.department_id,
-        course_id=content_data.course_id,
-        parent_id=content_data.parent_id,
-    )
+    # Prepare data
+    content_dict = content_data.model_dump(exclude={"tag_ids"})
+    
+    # Create content instance
+    new_content = Content(**content_dict)
 
     # Set author based on user role
     if current_user["role"] == UserRole.TEACHER.value:
@@ -53,64 +44,68 @@ def create_content(
     if content_data.status == PublishStatus.PUBLISHED.value:
         new_content.published_at = datetime.now(UTC)
 
-    db.add(new_content)
-    db.commit()
-
-    # Add tags if provided
+    # Handle tags
     if content_data.tag_ids:
-        for tag_id in content_data.tag_ids:
-            tag = db.query(ContentTag).filter(ContentTag.id == tag_id).first()
-            if tag:
-                association = ContentTagAssociation(
-                    content_id=new_content.id, tag_id=tag_id
-                )
-                db.add(association)
-        db.commit()
+        new_content.tag_ids = content_data.tag_ids
 
-    db.refresh(new_content)
+    await new_content.insert()
+    
+    # Populate tags for response
+    if new_content.tag_ids:
+        tags = await ContentTag.find(In(ContentTag.id, new_content.tag_ids)).to_list()
+        new_content.tags = tags
+    else:
+        new_content.tags = []
+        
     return new_content
 
 
 @router.get("/", response_model=list[ContentRead])
-def list_content(
+async def list_content(
     skip: int = 0,
     limit: int = 100,
-    status: str | None = None,
-    content_type: str | None = None,
-    department_id: int | None = None,
-    course_id: int | None = None,
-    db: Session = Depends(get_db),
+    status: Optional[str] = None,
+    content_type: Optional[str] = None,
+    department_id: Optional[str] = None,
+    course_id: Optional[int] = None,
     current_user: dict = Depends(get_current_user),
 ):
     """List content with optional filters. Students can only see published content."""
-    query = db.query(Content)
+    query = Content.find_all()
 
     # Students can only see published content
     if current_user["role"] == UserRole.STUDENT.value:
-        query = query.filter(Content.status == PublishStatus.PUBLISHED.value)
+        query = query.find(Content.status == PublishStatus.PUBLISHED.value)
 
     # Apply filters
     if status:
-        query = query.filter(Content.status == status)
+        query = query.find(Content.status == status)
     if content_type:
-        query = query.filter(Content.content_type == content_type)
+        query = query.find(Content.content_type == content_type)
     if department_id:
-        query = query.filter(Content.department_id == department_id)
+        query = query.find(Content.department_id == department_id)
     if course_id:
-        query = query.filter(Content.course_id == course_id)
+        query = query.find(Content.course_id == course_id)
 
-    contents = query.offset(skip).limit(limit).all()
+    contents = await query.skip(skip).limit(limit).to_list()
+    
+    # Optionally populate tags for each content (could be optimized)
+    for content in contents:
+        if content.tag_ids:
+            content.tags = await ContentTag.find(In(ContentTag.id, content.tag_ids)).to_list()
+        else:
+            content.tags = []
+            
     return contents
 
 
 @router.get("/{content_id}", response_model=ContentRead)
-def get_content(
-    content_id: int,
-    db: Session = Depends(get_db),
+async def get_content(
+    content_id: str,
     current_user: dict = Depends(get_current_user),
 ):
     """Get a specific content by ID."""
-    content = db.query(Content).filter(Content.id == content_id).first()
+    content = await Content.get(content_id)
 
     if not content:
         raise HTTPException(
@@ -127,18 +122,23 @@ def get_content(
             detail="Access denied to unpublished content",
         )
 
+    # Populate tags
+    if content.tag_ids:
+        content.tags = await ContentTag.find(In(ContentTag.id, content.tag_ids)).to_list()
+    else:
+        content.tags = []
+
     return content
 
 
 @router.put("/{content_id}", response_model=ContentRead)
-def update_content(
-    content_id: int,
+async def update_content(
+    content_id: str,
     content_data: ContentUpdate,
-    db: Session = Depends(get_db),
     current_user: dict = Depends(require_teacher_or_admin),
 ):
     """Update content. Teachers can only update their own content, admins can update any."""
-    content = db.query(Content).filter(Content.id == content_id).first()
+    content = await Content.get(content_id)
 
     if not content:
         raise HTTPException(
@@ -156,12 +156,9 @@ def update_content(
     # Update fields
     update_data = content_data.model_dump(exclude_unset=True)
 
-    # Handle tag updates separately
-    tag_ids = update_data.pop("tag_ids", None)
-
     # Check slug uniqueness if being updated
     if "slug" in update_data and update_data["slug"] != content.slug:
-        existing = db.query(Content).filter(Content.slug == update_data["slug"]).first()
+        existing = await Content.find_one(Content.slug == update_data["slug"])
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Slug already exists"
@@ -175,38 +172,34 @@ def update_content(
         if content.status != PublishStatus.PUBLISHED.value:
             content.published_at = datetime.now(UTC)
 
+    # Update tags if provided
+    tag_ids = update_data.pop("tag_ids", None)
+    if tag_ids is not None:
+        content.tag_ids = tag_ids
+
+    # Update other fields
     for key, value in update_data.items():
         setattr(content, key, value)
 
-    # Update tags if provided
-    if tag_ids is not None:
-        # Remove existing tag associations
-        db.query(ContentTagAssociation).filter(
-            ContentTagAssociation.content_id == content_id
-        ).delete()
-
-        # Add new associations
-        for tag_id in tag_ids:
-            tag = db.query(ContentTag).filter(ContentTag.id == tag_id).first()
-            if tag:
-                association = ContentTagAssociation(
-                    content_id=content_id, tag_id=tag_id
-                )
-                db.add(association)
-
-    db.commit()
-    db.refresh(content)
+    content.updated_at = datetime.now(UTC)
+    await content.save()
+    
+    # Populate tags
+    if content.tag_ids:
+        content.tags = await ContentTag.find(In(ContentTag.id, content.tag_ids)).to_list()
+    else:
+        content.tags = []
+        
     return content
 
 
 @router.delete("/{content_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_content(
-    content_id: int,
-    db: Session = Depends(get_db),
+async def delete_content(
+    content_id: str,
     current_user: dict = Depends(require_teacher_or_admin),
 ):
     """Delete content. Teachers can only delete their own content, admins can delete any."""
-    content = db.query(Content).filter(Content.id == content_id).first()
+    content = await Content.get(content_id)
 
     if not content:
         raise HTTPException(
@@ -221,19 +214,17 @@ def delete_content(
                 detail="Not authorized to delete this content",
             )
 
-    db.delete(content)
-    db.commit()
+    await content.delete()
     return None
 
 
 @router.post("/{content_id}/publish", response_model=ContentRead)
-def publish_content(
-    content_id: int,
-    db: Session = Depends(get_db),
+async def publish_content(
+    content_id: str,
     current_user: dict = Depends(require_teacher_or_admin),
 ):
     """Publish content."""
-    content = db.query(Content).filter(Content.id == content_id).first()
+    content = await Content.get(content_id)
 
     if not content:
         raise HTTPException(
@@ -250,20 +241,26 @@ def publish_content(
 
     content.status = PublishStatus.PUBLISHED.value
     content.published_at = datetime.now(UTC)
+    content.updated_at = datetime.now(UTC)
 
-    db.commit()
-    db.refresh(content)
+    await content.save()
+    
+    # Populate tags
+    if content.tag_ids:
+        content.tags = await ContentTag.find(In(ContentTag.id, content.tag_ids)).to_list()
+    else:
+        content.tags = []
+        
     return content
 
 
 @router.post("/{content_id}/unpublish", response_model=ContentRead)
-def unpublish_content(
-    content_id: int,
-    db: Session = Depends(get_db),
+async def unpublish_content(
+    content_id: str,
     current_user: dict = Depends(require_teacher_or_admin),
 ):
     """Unpublish content."""
-    content = db.query(Content).filter(Content.id == content_id).first()
+    content = await Content.get(content_id)
 
     if not content:
         raise HTTPException(
@@ -279,7 +276,14 @@ def unpublish_content(
             )
 
     content.status = PublishStatus.UNPUBLISHED.value
+    content.updated_at = datetime.now(UTC)
 
-    db.commit()
-    db.refresh(content)
+    await content.save()
+    
+    # Populate tags
+    if content.tag_ids:
+        content.tags = await ContentTag.find(In(ContentTag.id, content.tag_ids)).to_list()
+    else:
+        content.tags = []
+        
     return content

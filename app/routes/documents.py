@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
-from sqlalchemy.orm import Session
+from fastapi.responses import StreamingResponse
+from typing import Optional
 
 from app.core.constants import UserRole
-from app.core.dependencies import get_current_user, get_db, require_teacher_or_admin
+from app.core.dependencies import get_current_user, require_teacher_or_admin
 from app.models import Document
 from app.schemas import DocumentRead, DocumentUpdate
-from app.utils.cloudinary import upload_file_to_cloudinary, delete_file_from_cloudinary
+from app.utils.gridfs import (
+    upload_file_to_gridfs,
+    open_download_stream,
+    delete_file_from_gridfs,
+)
 
 router = APIRouter(prefix="/documents", tags=["Document Management"])
 
@@ -13,28 +18,19 @@ router = APIRouter(prefix="/documents", tags=["Document Management"])
 @router.post("/", response_model=DocumentRead, status_code=status.HTTP_201_CREATED)
 async def create_document(
     title: str = Form(...),
-    content_id: int | None = Form(None),
-    course_id: int | None = Form(None),
+    content_id: Optional[str] = Form(None),
+    course_id: Optional[int] = Form(None),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
     current_user: dict = Depends(require_teacher_or_admin),
 ):
-    """Upload a new document to Cloudinary and save metadata."""
-    # Upload to Cloudinary
-    cloudinary_result = await upload_file_to_cloudinary(file)
-    
-    if not cloudinary_result:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload file to storage"
-        )
+    """Upload a new document to GridFS and save metadata."""
+    gridfs_id, file_size = await upload_file_to_gridfs(file)
 
     new_doc = Document(
         title=title,
         filename=file.filename,
-        file_path=cloudinary_result.get("secure_url"),
-        cloudinary_public_id=cloudinary_result.get("public_id"),
-        file_size=cloudinary_result.get("bytes"),
+        gridfs_id=gridfs_id,
+        file_size=file_size,
         mime_type=file.content_type,
         content_id=content_id,
         course_id=course_id,
@@ -46,41 +42,37 @@ async def create_document(
     else:
         new_doc.uploaded_by_admin_id = current_user["id"]
 
-    db.add(new_doc)
-    db.commit()
-    db.refresh(new_doc)
+    await new_doc.insert()
     return new_doc
 
 
 @router.get("/", response_model=list[DocumentRead])
-def list_documents(
+async def list_documents(
     skip: int = 0,
     limit: int = 100,
-    content_id: int | None = None,
-    course_id: int | None = None,
-    db: Session = Depends(get_db),
+    content_id: Optional[str] = None,
+    course_id: Optional[int] = None,
     current_user: dict = Depends(get_current_user),
 ):
     """List documents with optional filters."""
-    query = db.query(Document)
+    query = Document.find_all()
 
     if content_id:
-        query = query.filter(Document.content_id == content_id)
+        query = query.find(Document.content_id == content_id)
     if course_id:
-        query = query.filter(Document.course_id == course_id)
+        query = query.find(Document.course_id == course_id)
 
-    documents = query.offset(skip).limit(limit).all()
+    documents = await query.skip(skip).limit(limit).to_list()
     return documents
 
 
 @router.get("/{doc_id}", response_model=DocumentRead)
-def get_document(
-    doc_id: int,
-    db: Session = Depends(get_db),
+async def get_document(
+    doc_id: str,
     current_user: dict = Depends(get_current_user),
 ):
     """Get a specific document by ID."""
-    doc = db.query(Document).filter(Document.id == doc_id).first()
+    doc = await Document.get(doc_id)
 
     if not doc:
         raise HTTPException(
@@ -90,15 +82,43 @@ def get_document(
     return doc
 
 
+@router.get("/{doc_id}/download")
+async def download_document(
+    doc_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Download a document file from GridFS."""
+    doc = await Document.get(doc_id)
+
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+
+    stream = await open_download_stream(doc.gridfs_id)
+
+    async def file_iterator():
+        while True:
+            chunk = await stream.readchunk()
+            if not chunk:
+                break
+            yield chunk
+
+    return StreamingResponse(
+        file_iterator(),
+        media_type=doc.mime_type,
+        headers={"Content-Disposition": f'attachment; filename="{doc.filename}"'},
+    )
+
+
 @router.put("/{doc_id}", response_model=DocumentRead)
-def update_document(
-    doc_id: int,
+async def update_document(
+    doc_id: str,
     doc_data: DocumentUpdate,
-    db: Session = Depends(get_db),
     current_user: dict = Depends(require_teacher_or_admin),
 ):
     """Update document metadata."""
-    doc = db.query(Document).filter(Document.id == doc_id).first()
+    doc = await Document.get(doc_id)
 
     if not doc:
         raise HTTPException(
@@ -117,19 +137,17 @@ def update_document(
     for key, value in update_data.items():
         setattr(doc, key, value)
 
-    db.commit()
-    db.refresh(doc)
+    await doc.save()
     return doc
 
 
 @router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(
-    doc_id: int,
-    db: Session = Depends(get_db),
+async def delete_document(
+    doc_id: str,
     current_user: dict = Depends(require_teacher_or_admin),
 ):
     """Delete a document."""
-    doc = db.query(Document).filter(Document.id == doc_id).first()
+    doc = await Document.get(doc_id)
 
     if not doc:
         raise HTTPException(
@@ -144,10 +162,8 @@ def delete_document(
                 detail="Not authorized to delete this document",
             )
 
-    # Delete from Cloudinary if public_id exists
-    if doc.cloudinary_public_id:
-        delete_file_from_cloudinary(doc.cloudinary_public_id)
+    if doc.gridfs_id:
+        await delete_file_from_gridfs(doc.gridfs_id)
 
-    db.delete(doc)
-    db.commit()
+    await doc.delete()
     return None

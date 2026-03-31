@@ -19,6 +19,7 @@ from app.core.exception_handlers import (
 from app.core.exceptions import AppException
 from app.core.logging_config import logger
 from app.core.middleware import RequestLoggingMiddleware
+from app.db.mongodb import init_mongodb
 from app.db.session import init_db
 
 
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
     """Run application startup and shutdown tasks."""
     logger.info(f"Starting {APIConfig.PROJECT_NAME} v{APIConfig.VERSION}")
     init_db()
+    await init_mongodb()
     yield
     logger.info("Shutting down application")
 

@@ -30,7 +30,7 @@ class DepartmentRead(DepartmentBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     created_at: datetime
     updated_at: datetime
 
@@ -50,7 +50,7 @@ class ContentTagRead(ContentTagBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     created_at: datetime
 
 
@@ -63,15 +63,15 @@ class ContentBase(BaseModel):
     body: str
     template: str | None = Field(default=None, max_length=100)
     status: str = Field(default="draft")
-    department_id: int | None = None
+    department_id: str | None = None
     course_id: int | None = None
-    parent_id: int | None = None
+    parent_id: str | None = None
 
 
 class ContentCreate(ContentBase):
     """Content creation schema."""
 
-    tag_ids: list[int] = Field(default_factory=list)
+    tag_ids: list[str] = Field(default_factory=list)
 
 
 class ContentUpdate(BaseModel):
@@ -83,10 +83,10 @@ class ContentUpdate(BaseModel):
     body: str | None = None
     template: str | None = None
     status: str | None = None
-    department_id: int | None = None
+    department_id: str | None = None
     course_id: int | None = None
-    parent_id: int | None = None
-    tag_ids: list[int] | None = None
+    parent_id: str | None = None
+    tag_ids: list[str] | None = None
 
 
 class ContentRead(ContentBase):
@@ -94,7 +94,7 @@ class ContentRead(ContentBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     author_teacher_id: int | None
     author_admin_id: int | None
     published_at: datetime | None
@@ -108,11 +108,10 @@ class DocumentBase(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=500)
     filename: str = Field(..., min_length=1, max_length=500)
-    file_path: str = Field(..., min_length=1, max_length=1000)
-    cloudinary_public_id: str | None = Field(default=None, max_length=500)
+    gridfs_id: str = Field(..., min_length=1, max_length=500)
     file_size: int
     mime_type: str = Field(..., min_length=1, max_length=100)
-    content_id: int | None = None
+    content_id: str | None = None
     course_id: int | None = None
 
 
@@ -124,7 +123,7 @@ class DocumentUpdate(BaseModel):
     """Document update schema."""
 
     title: str | None = Field(default=None, min_length=1, max_length=500)
-    content_id: int | None = None
+    content_id: str | None = None
     course_id: int | None = None
 
 
@@ -133,7 +132,7 @@ class DocumentRead(DocumentBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     uploaded_by_teacher_id: int | None
     uploaded_by_admin_id: int | None
     created_at: datetime
@@ -150,7 +149,7 @@ class CalendarEventBase(BaseModel):
     end_date: datetime
     all_day: bool = False
     course_id: int | None = None
-    department_id: int | None = None
+    department_id: str | None = None
 
 
 class CalendarEventCreate(CalendarEventBase):
@@ -167,7 +166,7 @@ class CalendarEventUpdate(BaseModel):
     end_date: datetime | None = None
     all_day: bool | None = None
     course_id: int | None = None
-    department_id: int | None = None
+    department_id: str | None = None
 
 
 class CalendarEventRead(CalendarEventBase):
@@ -175,7 +174,7 @@ class CalendarEventRead(CalendarEventBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     created_by_teacher_id: int | None
     created_by_admin_id: int | None
     created_at: datetime

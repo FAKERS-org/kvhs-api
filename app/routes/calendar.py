@@ -1,10 +1,10 @@
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
 
 from app.core.constants import UserRole
-from app.core.dependencies import get_current_user, get_db, require_teacher_or_admin
+from app.core.dependencies import get_current_user, require_teacher_or_admin
 from app.models import CalendarEvent
 from app.schemas import CalendarEventCreate, CalendarEventRead, CalendarEventUpdate
 
@@ -14,9 +14,8 @@ router = APIRouter(prefix="/calendar", tags=["Calendar"])
 @router.post(
     "/events", response_model=CalendarEventRead, status_code=status.HTTP_201_CREATED
 )
-def create_event(
+async def create_event(
     event_data: CalendarEventCreate,
-    db: Session = Depends(get_db),
     current_user: dict = Depends(require_teacher_or_admin),
 ):
     """Create a new calendar event."""
@@ -44,53 +43,49 @@ def create_event(
     else:
         new_event.created_by_admin_id = current_user["id"]
 
-    db.add(new_event)
-    db.commit()
-    db.refresh(new_event)
+    await new_event.insert()
     return new_event
 
 
 @router.get("/events", response_model=list[CalendarEventRead])
-def list_events(
+async def list_events(
     skip: int = 0,
     limit: int = 100,
-    start_date: datetime | None = Query(default=None),
-    end_date: datetime | None = Query(default=None),
-    event_type: str | None = None,
-    course_id: int | None = None,
-    department_id: int | None = None,
-    db: Session = Depends(get_db),
+    start_date: Optional[datetime] = Query(default=None),
+    end_date: Optional[datetime] = Query(default=None),
+    event_type: Optional[str] = None,
+    course_id: Optional[int] = None,
+    department_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
 ):
     """List calendar events with optional filters."""
-    query = db.query(CalendarEvent)
+    query = CalendarEvent.find_all()
 
     # Filter by date range
     if start_date:
-        query = query.filter(CalendarEvent.start_date >= start_date)
+        query = query.find(CalendarEvent.start_date >= start_date)
     if end_date:
-        query = query.filter(CalendarEvent.end_date <= end_date)
+        query = query.find(CalendarEvent.end_date <= end_date)
 
     # Other filters
     if event_type:
-        query = query.filter(CalendarEvent.event_type == event_type)
+        query = query.find(CalendarEvent.event_type == event_type)
     if course_id:
-        query = query.filter(CalendarEvent.course_id == course_id)
+        query = query.find(CalendarEvent.course_id == course_id)
     if department_id:
-        query = query.filter(CalendarEvent.department_id == department_id)
+        query = query.find(CalendarEvent.department_id == department_id)
 
-    events = query.order_by(CalendarEvent.start_date).offset(skip).limit(limit).all()
+    events = await query.sort(+CalendarEvent.start_date).skip(skip).limit(limit).to_list()
     return events
 
 
 @router.get("/events/{event_id}", response_model=CalendarEventRead)
-def get_event(
-    event_id: int,
-    db: Session = Depends(get_db),
+async def get_event(
+    event_id: str,
     current_user: dict = Depends(get_current_user),
 ):
     """Get a specific calendar event."""
-    event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
+    event = await CalendarEvent.get(event_id)
 
     if not event:
         raise HTTPException(
@@ -101,14 +96,13 @@ def get_event(
 
 
 @router.put("/events/{event_id}", response_model=CalendarEventRead)
-def update_event(
-    event_id: int,
+async def update_event(
+    event_id: str,
     event_data: CalendarEventUpdate,
-    db: Session = Depends(get_db),
     current_user: dict = Depends(require_teacher_or_admin),
 ):
     """Update a calendar event."""
-    event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
+    event = await CalendarEvent.get(event_id)
 
     if not event:
         raise HTTPException(
@@ -137,19 +131,17 @@ def update_event(
     for key, value in update_data.items():
         setattr(event, key, value)
 
-    db.commit()
-    db.refresh(event)
+    await event.save()
     return event
 
 
 @router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_event(
-    event_id: int,
-    db: Session = Depends(get_db),
+async def delete_event(
+    event_id: str,
     current_user: dict = Depends(require_teacher_or_admin),
 ):
     """Delete a calendar event."""
-    event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
+    event = await CalendarEvent.get(event_id)
 
     if not event:
         raise HTTPException(
@@ -164,6 +156,5 @@ def delete_event(
                 detail="Not authorized to delete this event",
             )
 
-    db.delete(event)
-    db.commit()
+    await event.delete()
     return None

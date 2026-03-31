@@ -20,12 +20,10 @@ services:
         value: ["http://localhost:3000"]
       - key: AUTO_CREATE_TABLES
         value: "true"
-      - key: CLOUDINARY_CLOUD_NAME
+      - key: MONGODB_URL
         sync: false
-      - key: CLOUDINARY_API_KEY
-        sync: false
-      - key: CLOUDINARY_API_SECRET
-        sync: false
+      - key: MONGODB_DB_NAME
+        value: kvhs
 
 databases:
   - name: kvhs-db

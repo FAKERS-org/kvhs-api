@@ -14,6 +14,8 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "sqlite:///./school.db"
+    MONGODB_URL: str = "mongodb://localhost:27017"
+    MONGODB_DB_NAME: str = "kvhs"
     AUTO_CREATE_TABLES: bool = True
 
     # Security
@@ -30,11 +32,6 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
 
-    # Cloudinary
-    CLOUDINARY_CLOUD_NAME: str | None = None
-    CLOUDINARY_API_KEY: str | None = None
-    CLOUDINARY_API_SECRET: str | None = None
-
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
     def parse_allowed_origins(cls, value: str | list[str]) -> list[str]:
@@ -45,7 +42,8 @@ class Settings(BaseSettings):
             result = []
             for item in value:
                 if isinstance(item, str):
-                    result.extend([o.strip() for o in item.split(",") if o.strip()])
+                    result.extend([o.strip()
+                                  for o in item.split(",") if o.strip()])
                 else:
                     result.append(item)
             return result

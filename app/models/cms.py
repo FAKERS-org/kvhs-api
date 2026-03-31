@@ -1,179 +1,110 @@
 """
-CMS models (Content, Document, Calendar, Department, Tag).
+CMS models using Beanie for MongoDB (unstructured data).
 """
 
 from datetime import datetime
+from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.core.constants import PublishStatus
-from app.models.base import Base, TimestampMixin
+from beanie import Document as BeanieDocument
+from pydantic import Field
 
 
-class Department(Base, TimestampMixin):
+class Department(BeanieDocument):
     """Department model for content organization."""
 
-    __tablename__ = "departments"
+    name: str = Field(..., unique=True)
+    description: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    # Relationships
-    contents: Mapped[list["Content"]] = relationship(back_populates="department")
-    calendar_events: Mapped[list["CalendarEvent"]] = relationship(
-        back_populates="department"
-    )
+    class Settings:
+        name = "departments"
 
 
-class ContentTag(Base, TimestampMixin):
+class ContentTag(BeanieDocument):
     """Content tag model."""
 
-    __tablename__ = "content_tags"
+    name: str = Field(..., unique=True)
+    created_at: datetime = Field(default_factory=datetime.now)
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True, index=True)
-
-
-class ContentTagAssociation(Base):
-    """Association table for Content and Tags (many-to-many)."""
-
-    __tablename__ = "content_tag_associations"
-
-    content_id: Mapped[int] = mapped_column(ForeignKey("contents.id"), primary_key=True)
-    tag_id: Mapped[int] = mapped_column(ForeignKey("content_tags.id"), primary_key=True)
+    class Settings:
+        name = "content_tags"
 
 
-class Content(Base, TimestampMixin):
+class Content(BeanieDocument):
     """Main Content model for CMS."""
 
-    __tablename__ = "contents"
+    title: str
+    slug: str = Field(..., unique=True)
+    content_type: str
+    body: str  # Can be JSON or rich text
+    template: Optional[str] = None
+    status: str = "draft"
+    published_at: Optional[datetime] = None
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    title: Mapped[str] = mapped_column(String(500), index=True)
-    slug: Mapped[str] = mapped_column(String(500), unique=True, index=True)
-    content_type: Mapped[str] = mapped_column(String(50), index=True)
-    body: Mapped[str] = mapped_column(Text)
-    template: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Foreign references (SQL IDs)
+    department_id: Optional[str] = None  # Reference to Department in MongoDB
+    course_id: Optional[int] = None  # Reference to Course in SQL
+    parent_id: Optional[str] = None  # Reference to Content in MongoDB
 
-    # Publishing
-    status: Mapped[str] = mapped_column(
-        String(20), default=PublishStatus.DRAFT.value, index=True
-    )
-    published_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    # Author tracking (SQL IDs)
+    author_teacher_id: Optional[int] = None
+    author_admin_id: Optional[int] = None
 
-    # Organization
-    department_id: Mapped[int | None] = mapped_column(
-        ForeignKey("departments.id"), nullable=True, index=True
-    )
-    course_id: Mapped[int | None] = mapped_column(
-        ForeignKey("courses.id"), nullable=True, index=True
-    )
-    parent_id: Mapped[int | None] = mapped_column(
-        ForeignKey("contents.id"), nullable=True, index=True
-    )
+    # Tags (MongoDB IDs)
+    tag_ids: list[str] = Field(default_factory=list)
 
-    # Author tracking
-    author_teacher_id: Mapped[int | None] = mapped_column(
-        ForeignKey("teachers.id"), nullable=True, index=True
-    )
-    author_admin_id: Mapped[int | None] = mapped_column(
-        ForeignKey("admins.id"), nullable=True, index=True
-    )
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 
-    # Relationships
-    department: Mapped["Department | None"] = relationship(back_populates="contents")
-    course: Mapped["Course | None"] = relationship(back_populates="contents")
-    author: Mapped["Teacher | None"] = relationship(back_populates="contents")
-    admin_author: Mapped["Admin | None"] = relationship(back_populates="contents")
-
-    # Hierarchical relationship
-    parent: Mapped["Content | None"] = relationship(
-        "Content", remote_side=[id], back_populates="children"
-    )
-    children: Mapped[list["Content"]] = relationship("Content", back_populates="parent")
-
-    # Tags (many-to-many)
-    tags: Mapped[list["ContentTag"]] = relationship(
-        secondary="content_tag_associations", lazy="selectin"
-    )
-
-    # Documents
-    documents: Mapped[list["Document"]] = relationship(
-        back_populates="content", cascade="all, delete-orphan"
-    )
+    class Settings:
+        name = "contents"
 
 
-class Document(Base, TimestampMixin):
+class CMSDocument(BeanieDocument):
     """Document model for file attachments."""
 
-    __tablename__ = "documents"
-
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    title: Mapped[str] = mapped_column(String(500), index=True)
-    filename: Mapped[str] = mapped_column(String(500))
-    file_path: Mapped[str] = mapped_column(String(1000))
-    cloudinary_public_id: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    file_size: Mapped[int] = mapped_column(Integer)
-    mime_type: Mapped[str] = mapped_column(String(100))
+    title: str
+    filename: str
+    gridfs_id: str
+    file_size: int
+    mime_type: str
 
     # Organization
-    content_id: Mapped[int | None] = mapped_column(
-        ForeignKey("contents.id"), nullable=True, index=True
-    )
-    course_id: Mapped[int | None] = mapped_column(
-        ForeignKey("courses.id"), nullable=True, index=True
-    )
+    content_id: Optional[str] = None  # Reference to Content in MongoDB
+    course_id: Optional[int] = None  # Reference to Course in SQL
 
-    # Upload tracking
-    uploaded_by_teacher_id: Mapped[int | None] = mapped_column(
-        ForeignKey("teachers.id"), nullable=True, index=True
-    )
-    uploaded_by_admin_id: Mapped[int | None] = mapped_column(
-        ForeignKey("admins.id"), nullable=True, index=True
-    )
+    # Upload tracking (SQL IDs)
+    uploaded_by_teacher_id: Optional[int] = None
+    uploaded_by_admin_id: Optional[int] = None
 
-    # Relationships
-    content: Mapped["Content | None"] = relationship(back_populates="documents")
-    course: Mapped["Course | None"] = relationship(back_populates="documents")
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+    class Settings:
+        name = "documents"
 
 
-class CalendarEvent(Base, TimestampMixin):
+class CalendarEvent(BeanieDocument):
     """Calendar event model."""
 
-    __tablename__ = "calendar_events"
-
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    title: Mapped[str] = mapped_column(String(500), index=True)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    event_type: Mapped[str] = mapped_column(String(50), index=True)
-
-    # Date/Time
-    start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
-    end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
-    all_day: Mapped[bool] = mapped_column(default=False)
+    title: str
+    description: Optional[str] = None
+    event_type: str
+    start_date: datetime
+    end_date: datetime
+    all_day: bool = False
 
     # Organization
-    course_id: Mapped[int | None] = mapped_column(
-        ForeignKey("courses.id"), nullable=True, index=True
-    )
-    department_id: Mapped[int | None] = mapped_column(
-        ForeignKey("departments.id"), nullable=True, index=True
-    )
+    course_id: Optional[int] = None  # Reference to Course in SQL
+    department_id: Optional[str] = None  # Reference to Department in MongoDB
 
-    # Author tracking
-    created_by_teacher_id: Mapped[int | None] = mapped_column(
-        ForeignKey("teachers.id"), nullable=True, index=True
-    )
-    created_by_admin_id: Mapped[int | None] = mapped_column(
-        ForeignKey("admins.id"), nullable=True, index=True
-    )
+    # Author tracking (SQL IDs)
+    created_by_teacher_id: Optional[int] = None
+    created_by_admin_id: Optional[int] = None
 
-    # Relationships
-    course: Mapped["Course | None"] = relationship(back_populates="calendar_events")
-    department: Mapped["Department | None"] = relationship(
-        back_populates="calendar_events"
-    )
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+    class Settings:
+        name = "calendar_events"
