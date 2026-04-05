@@ -33,7 +33,7 @@ Health endpoints:
 - Alembic migrations
 - Pydantic Settings
 - JWT auth (`python-jose` + `passlib`)
-- MongoDB (Beanie + Motor) with GridFS for document storage
+- MinIO for document/object storage
 
 ## Project Structure
 
@@ -81,8 +81,11 @@ Required/important variables:
 | `ALLOWED_ORIGINS`             | localhost frontends     | Comma-separated origins                     |
 | `UPLOAD_DIR`                  | `./uploads`             | Local upload directory                      |
 | `MAX_UPLOAD_SIZE`             | `10485760`              | 10MB                                        |
-| `MONGODB_URL`                 | `mongodb://...`         | MongoDB connection string for GridFS        |
-| `MONGODB_DB_NAME`             | `kvhs`                  | MongoDB database name                       |
+| `MINIO_ENDPOINT`              | `localhost:9000`        | MinIO endpoint                              |
+| `MINIO_ACCESS_KEY`            | `minioadmin`            | MinIO access key                            |
+| `MINIO_SECRET_KEY`            | `minioadmin`            | MinIO secret key                            |
+| `MINIO_BUCKET_NAME`           | `kvhs-files`            | MinIO bucket name                           |
+| `MINIO_SECURE`                | `false`                 | Use TLS for MinIO                           |
 
 ### 3. Run the API
 

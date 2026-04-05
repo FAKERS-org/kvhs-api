@@ -17,15 +17,18 @@ class Student(Base, TimestampMixin):
     __tablename__ = "students"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    student_id: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    student_id: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     grade_level: Mapped[int] = mapped_column(Integer)
     enrolled_date: Mapped[date] = mapped_column(Date)
 
     # Authentication fields
-    hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    hashed_password: Mapped[str | None] = mapped_column(
+        String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False)
     role: Mapped[str] = mapped_column(
         String(20), default=UserRole.STUDENT.value, nullable=False
     )
@@ -42,22 +45,25 @@ class Teacher(Base, TimestampMixin):
     __tablename__ = "teachers"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    teacher_id: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    teacher_id: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     department: Mapped[str] = mapped_column(String(255), index=True)
     hired_date: Mapped[date] = mapped_column(Date)
 
     # Authentication fields
-    hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    hashed_password: Mapped[str | None] = mapped_column(
+        String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False)
     role: Mapped[str] = mapped_column(
         String(20), default=UserRole.TEACHER.value, nullable=False
     )
 
     # Relationships
     courses: Mapped[list["Course"]] = relationship(back_populates="teacher")
-    # CMS contents relationship now handled via MongoDB IDs
+    # CMS contents relationships are handled via SQL references.
 
 
 class Admin(Base, TimestampMixin):
@@ -70,9 +76,10 @@ class Admin(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False)
     role: Mapped[str] = mapped_column(
         String(20), default=UserRole.ADMIN.value, nullable=False
     )
 
-    # CMS contents relationship now handled via MongoDB IDs
+    # CMS contents relationships are handled via SQL references.

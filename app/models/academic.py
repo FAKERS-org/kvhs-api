@@ -16,18 +16,20 @@ class Course(Base, TimestampMixin):
     __tablename__ = "courses"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    course_code: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    course_code: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     credits: Mapped[int] = mapped_column(Integer)
-    teacher_id: Mapped[int] = mapped_column(ForeignKey("teachers.id"), index=True)
+    teacher_id: Mapped[int] = mapped_column(
+        ForeignKey("teachers.id"), index=True)
 
     # Relationships
     teacher: Mapped["Teacher"] = relationship(back_populates="courses")
     enrollments: Mapped[list["Enrollment"]] = relationship(
         back_populates="course", cascade="all, delete-orphan"
     )
-    # CMS relationships are now handled via MongoDB IDs (manual lookups)
+    # CMS relationships are handled via SQL references.
 
 
 class Enrollment(Base, TimestampMixin):
@@ -36,8 +38,10 @@ class Enrollment(Base, TimestampMixin):
     __tablename__ = "enrollments"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), index=True)
-    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), index=True)
+    student_id: Mapped[int] = mapped_column(
+        ForeignKey("students.id"), index=True)
+    course_id: Mapped[int] = mapped_column(
+        ForeignKey("courses.id"), index=True)
     enrolled_date: Mapped[date] = mapped_column(Date)
     grade: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
@@ -52,10 +56,13 @@ class Attendance(Base, TimestampMixin):
     __tablename__ = "attendances"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), index=True)
-    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), index=True)
+    student_id: Mapped[int] = mapped_column(
+        ForeignKey("students.id"), index=True)
+    course_id: Mapped[int] = mapped_column(
+        ForeignKey("courses.id"), index=True)
     date: Mapped[date] = mapped_column(Date, index=True)
-    status: Mapped[str] = mapped_column(String(20))  # present, absent, late, excused
+    status: Mapped[str] = mapped_column(
+        String(20))  # present, absent, late, excused
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
@@ -69,8 +76,11 @@ class AssignmentScore(Base, TimestampMixin):
     __tablename__ = "assignment_scores"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), index=True)
-    content_id: Mapped[str] = mapped_column(String(24), index=True) # MongoDB ID
+    student_id: Mapped[int] = mapped_column(
+        ForeignKey("students.id"), index=True)
+    content_id: Mapped[int] = mapped_column(
+        ForeignKey("cms_contents.id", ondelete="CASCADE"), index=True
+    )
     score: Mapped[float] = mapped_column()
     max_score: Mapped[float] = mapped_column()
     feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -79,3 +89,4 @@ class AssignmentScore(Base, TimestampMixin):
 
     # Relationships
     student: Mapped["Student"] = relationship()
+    content: Mapped["Content"] = relationship()

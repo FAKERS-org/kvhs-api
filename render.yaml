@@ -20,10 +20,6 @@ services:
         value: ["http://localhost:3000"]
       - key: AUTO_CREATE_TABLES
         value: "true"
-      - key: MONGODB_URL
-        sync: false
-      - key: MONGODB_DB_NAME
-        value: kvhs
 
 databases:
   - name: kvhs-db
