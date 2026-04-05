@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 
-
+# Note: The Student and Teacher models are defined in user.py to keep authentication-related fields together, while the Course, Enrollment, Attendance, and AssignmentScore models are defined here to focus on academic-related data.
 class Course(Base, TimestampMixin):
     """Course model."""
 
@@ -32,6 +32,7 @@ class Course(Base, TimestampMixin):
     # CMS relationships are handled via SQL references.
 
 
+# Enrollment is a separate model to allow for additional fields like enrolled_date and grade, and to support many-to-many relationships between students and courses.
 class Enrollment(Base, TimestampMixin):
     """Enrollment model (Student-Course relationship)."""
 
@@ -49,7 +50,7 @@ class Enrollment(Base, TimestampMixin):
     student: Mapped["Student"] = relationship(back_populates="enrollments")
     course: Mapped["Course"] = relationship(back_populates="enrollments")
 
-
+# Attendance and AssignmentScore models are separate to allow for more detailed tracking and reporting.
 class Attendance(Base, TimestampMixin):
     """Attendance tracking model."""
 
